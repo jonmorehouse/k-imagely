@@ -6,15 +6,16 @@ RUN apt-get update && \
   rm -rf /var/lib/apt/lists/*
 
 # fetch, build install libmill
-RUN mkdir /build && \
-  git clone https://github.com/sustrik/libmill.git /build/libmill && \
-  cd /build/libmill && \
+RUN git clone https://github.com/sustrik/libmill.git /build/libmill && \
+  cd /opt/libmill && \
   ./autogen.sh && \
   ./configure && \
   make && \
   make check && \
   make install && \
-  rm -rf /build/libmill
+  rm -rf /opt/libmill
 
-
+RUN cd /opt/k-imagely && \ 
+  make clean && \
+  make install
 

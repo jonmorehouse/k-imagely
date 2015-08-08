@@ -11,7 +11,7 @@ Vagrant.configure("2") do |config|
   end
 
   config.vm.provision :shell, inline: 'sudo apt-get update' 
-  config.vm.synced_folder '.', '/app'
+  config.vm.synced_folder '.', '/opt/k-imagely'
 
   config.vm.provision :docker do |d|
     d.pull_images 'ubuntu'
