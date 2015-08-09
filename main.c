@@ -1,46 +1,60 @@
-#include <libmill.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-void dialogue(tcpsock as) {
-  tcpsend(as, "What's your name?\r\n", 19, -1);
+#include <libmill.h>
 
-  tcpclose(as);
+typedef enum {
+  INVALID_PORT,
+} ERRORS;
+
+struct Config {
+  char *unparsedPort;
+  int port;
+};
+
+// global config object
+struct Config config = {
+  .unparsedPort = "8000",
+  .port = 8000,
+};
+
+int parseConfig(int argc, char **argv) {
+  char ** configItem = NULL;
+
+  for (int i=0; i < argc; ++i) {
+    char *option = argv[i];
+
+    if (configItem) {
+      *configItem = option;
+      configItem = NULL;
+      continue;
+    }
+
+    if (strncmp(option, "--port", 5) == 0) {
+      configItem = &config.unparsedPort;
+    }
+  }
+
+  // check validity of port
+  int parsedPort = atoi(config.unparsedPort);
+  if (parsedPort) {
+    config.port = parsedPort;
+  } else {
+    return INVALID_PORT;
+  }
+
+  return 0;
 }
 
 int main(int argc, char *argv[]) {
-  int port = 5555;
-  if (argc > 1) {
-    port = atoi(argv[1]);
+  int err = parseConfig(argc, argv);
+  if (err) {
+    return err;
   }
 
-  ipaddr addr = iplocal(NULL, port, 0);
-  tcpsock ls = tcplisten(addr);
-  if (!ls) {
-    perror("Can't open listening socker");
-    return 1;
-  }
-
-  while(1) {
-    tcpsock as = tcpaccept(ls, -1);
-    printf("New Connection\n");
-
-    tcpsend(as, "What's your name?\r\n", 19, -1);
-    tcpflush(as, -1);
-
-    char inbuf[256];
-    size_t size = tcprecvuntil(as, inbuf, sizeof(inbuf), "\r", 1, -1);
-    inbuf[size-1] = 0;
-    char outbuf[256];
-    int rc = snprintf(outbuf, sizeof(outbuf), "Hello, %s!\r\n", inbuf);
-    tcpsend(as, outbuf, rc, -1);
-    tcpflush(as, -1);
-
-    cleanup:
-    tcpclose(as);
-  }
+  /*int server = createServer(handler);*/
 
   return 0;
 }
