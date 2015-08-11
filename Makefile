@@ -3,8 +3,11 @@ LIBS=-lmill
 OUTPUT_DIR=.
 OUTPUT=kimagely
 
-install: main.c
-	$(CC) $(LIBS) -o $(OUTPUT_DIR)/$(OUTPUT) main.c
+SRC_FILES=main.c server.c router.c
+HEADER_FILES=server.h router.h
+
+install: $(HEADER_FILES) $(SRC_FILES)
+	$(CC) $(LIBS) -o $(OUTPUT_DIR)/$(OUTPUT) $(SRC_FILES)
 
 clean:
 	@if [ -a $(OUTPUT_DIR)/$(OUTPUT) ] ; \

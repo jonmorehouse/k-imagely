@@ -2,8 +2,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include <libmill.h>
+
+#include "server.h"
+#include "router.h"
 
 typedef enum {
   INVALID_PORT,
@@ -49,12 +51,16 @@ int parseConfig(int argc, char **argv) {
 }
 
 int main(int argc, char *argv[]) {
-  int err = parseConfig(argc, argv);
+  int err;
+
+  err = parseConfig(argc, argv);
   if (err) {
     return err;
   }
 
-  /*int server = createServer(handler);*/
+  Server *server = malloc(sizeof(Server));
+  startServer(server);
+  free(server);
 
   return 0;
 }
