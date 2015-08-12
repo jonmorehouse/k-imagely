@@ -15,6 +15,57 @@ Request * getPostData(tcpsock socket) {
   return NULL;
 }
 
+void parseRequestMethod(Request *request, char *value) {
+  if (!strncmp(value, "GET", 3)) {
+    request->HTTPMethod = HTTP_GET;
+  } else if (!strncmp(value, "POST", 4)) {
+    request->HTTPMethod = HTTP_POST;
+  } else if (!strncmp(value, "PUT", 3)) {
+    request->HTTPMethod = HTTP_PUT;
+  } else if (!strncmp(value, "DELETE", 6)) {
+    request->HTTPMethod = HTTP_DELETE;
+  } else if (!strncmp(value, "OPTIONS", 7)) {
+    request->HTTPMethod = HTTP_OPTIONS;
+  } else {
+    request->error = HTTP_INVALID_HTTP_METHOD;
+  }
+}
+
+void parseQueryArgs(Request *request, char *input) {
+  char *currentLine, *currentLineEnd, *keyValueEnd;
+  QueryArg *currentArg, *lastArg = NULL;
+  request->queryArg = NULL;
+
+  currentLine = strtok_r(input, "&", &currentLineEnd);
+  while (currentLine != NULL) {
+    char * key, * value;
+    key = strtok_r(currentLine, "=", &keyValueEnd);
+    value = strtok_r(NULL, "=", &keyValueEnd);
+
+    if (key != NULL && value != NULL) {
+      currentArg = malloc(sizeof(QueryArg));
+      currentArg->key = calloc(strlen(key) + 2, sizeof(char));
+      strcpy(currentArg->key, "name");
+      /*currentArg->key[5] = '\0';*/
+      currentArg->value = value;
+      currentArg->next = NULL;
+
+      request->queryArgsCount = request->queryArgsCount + 1;
+
+      // if this is the first queryArg, then the request struct needs to be updated
+      if (request->queryArg == NULL) {
+        request->queryArg = currentArg;
+      } else {
+        lastArg->next = currentArg;
+      }
+      
+      lastArg = currentArg;
+    }
+    
+    currentLine = strtok_r(NULL, "&", &currentLineEnd);
+  }
+}
+
 Request * getRequest(tcpsock socket) {
   char method[8], uri[URI_MAXIMUM_LENGTH];
   Request * request = malloc(sizeof(Request));
@@ -23,9 +74,11 @@ Request * getRequest(tcpsock socket) {
   if (errno) {
     request->error = errno;
     return request;
-  } else {
-
-
+  } 
+  
+  parseRequestMethod(request, method);
+  if (request->error) {
+    return request;
   }
 
   size = tcprecvuntil(socket, uri, URI_MAXIMUM_LENGTH, " ?", 2, -1);
@@ -33,9 +86,11 @@ Request * getRequest(tcpsock socket) {
     request->error = errno;
     return request;
   } else if (uri[size - 1] == '?') {
-    // parse query args out of the response
+    // seek the queryArgs from the socket
     char queryArgs[QUERY_ARG_MAXIMUM_LENGTH];
     size = tcprecvuntil(socket, queryArgs, QUERY_ARG_MAXIMUM_LENGTH, " ", 1, -1);
+    // parse the args into the request object
+    parseQueryArgs(request, queryArgs);
   }
 
   char protocol[8];
@@ -50,17 +105,33 @@ Request * getRequest(tcpsock socket) {
 }
 
 Request* parseRequest(tcpsock socket) {
-  Request * route = getRequest(socket);
+  Request * request = getRequest(socket);
+  QueryArg * current = request->queryArg;
+
+  while (current != NULL) {
+    printf("%s\n", current->key);
+
+    current = current->next;
+  }
 
   // parse other headers
-  return NULL;
+  return request;
 }
 
 void socketHandler(tcpsock socket, Server *server) {
   // read entirety of socket into buffer
   // send to API parser
   // apiParser will handle JSON
-  parseRequest(socket);
+  Request *request = parseRequest(socket);
+  free(request);
+
+  /*if (request->error) {*/
+    /*[>writeErrorResponse(request);<]*/
+  /*} else {*/
+    /*free(request);*/
+  /*}*/
+
+  /*Response *response = */
 
   char response[256];
   int responseCharacters = snprintf(response, sizeof(response), "Hello World");
@@ -86,7 +157,8 @@ void startServer(Server *server) {
       continue;
     }
     
-    go(socketHandler(acceptedSocket, server));
+    socketHandler(acceptedSocket, server);
+    /*go(socketHandler(acceptedSocket, server));*/
   }
 }
 

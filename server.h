@@ -11,34 +11,32 @@ typedef enum {
   HTTP_INVALID_PROTOCOL,
   HTTP_INVALID_ROUTE,
   HTTP_URL_TOO_LONG,
+  HTTP_INVALID_HTTP_METHOD,
 } SERVER_ERRORS;
 
 // create an enum + array of const char
-#define FOREACH_HTTP_METHOD(HTTP_METHOD) \
-  HTTP_METHOD(GET) \
-  HTTP_METHOD(POST) \
-  HTTP_METHOD(PUT) \
-  HTTP_METHOD(DELETE) \
-  HTTP_METHOD(OPTIONS) \
+typedef enum {
+  HTTP_GET,
+  HTTP_POST,
+  HTTP_PUT,
+  HTTP_DELETE,
+  HTTP_OPTIONS,
+} HTTP_METHODS;
 
-#define GENERATE_ENUM(ENUM) ENUM, 
-#define GENERATE_STRING(STRING) #STRING,
-
-enum HTTP_METHOD_ENUM {
-  FOREACH_HTTP_METHOD(GENERATE_ENUM)
-};
-
-static const char *HTTP_METHOD_STRING[] = {
-  FOREACH_HTTP_METHOD(GENERATE_STRING)
+typedef struct QueryArg QueryArg;
+struct QueryArg {
+  char * key;
+  char * value;
+  QueryArg *next;
 };
 
 typedef struct {
-  int method;
+  int HTTPMethod;
   _Bool isHTTP;
   int queryArgsCount;
-  char ** queryArgs;
+  QueryArg * queryArg;
   int error;
-  
+
   // handlerMethod
   // query_arguments
 } Request;
