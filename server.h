@@ -31,19 +31,25 @@ struct QueryArg {
 };
 
 typedef struct {
+  int length;
+  char ** data;
+} Response;
+
+typedef struct {
   int HTTPMethod;
   _Bool isHTTP;
   int queryArgsCount;
   QueryArg * queryArg;
   int error;
 
-  // handlerMethod
-  // query_arguments
+  Response* (*handler)(Request *);
 } Request;
 
 typedef struct {
   // logChannel
   // routeTable
+  Response * (*errorHandler)(Request *);
+  Response * (*routeHandler)(Request *);
 } Server;
 
 void startServer(Server *);

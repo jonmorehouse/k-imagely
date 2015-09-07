@@ -6,6 +6,7 @@
 
 #include "server.h"
 #include "router.h"
+#include "app.h"
 
 typedef enum {
   INVALID_PORT,
@@ -58,9 +59,12 @@ int main(int argc, char *argv[]) {
     return err;
   }
 
-  Server *server = malloc(sizeof(Server));
-  startServer(server);
-  free(server);
+  Server server = {
+    .errorHandler = errorHandler,
+    .routeHandler = routeHandler,
+  };
+
+  startServer(&server);
 
   return 0;
 }

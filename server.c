@@ -10,9 +10,9 @@ const int URI_MAXIMUM_LENGTH = 256;
 const int QUERY_ARG_MAXIMUM_LENGTH = 2083 - URI_MAXIMUM_LENGTH;
 const char* HTTP_PROTOCOL = "HTTP/1.1";
 
-Request * getPostData(tcpsock socket) {
-
-  return NULL;
+void parseRequestBody(tcpsock socket, Request *request) {
+  // TODO: read content length
+  // TODO: read content into request body
 }
 
 void parseRequestMethod(Request *request, char *value) {
@@ -44,15 +44,15 @@ void parseQueryArgs(Request *request, char *input) {
 
     if (key != NULL && value != NULL) {
       currentArg = malloc(sizeof(QueryArg));
-      currentArg->key = calloc(strlen(key) + 2, sizeof(char));
-      strcpy(currentArg->key, "name");
-      /*currentArg->key[5] = '\0';*/
-      currentArg->value = value;
-      currentArg->next = NULL;
-
+      currentArg->key = calloc(strlen(key) + 1, sizeof(char));
+      currentArg->value = calloc(strlen(value) + 1, sizeof(char)); 
       request->queryArgsCount = request->queryArgsCount + 1;
 
-      // if this is the first queryArg, then the request struct needs to be updated
+      strcpy(currentArg->key, key);
+      strcpy(currentArg->value, value);
+      currentArg->next = NULL;
+
+      // if this is the first queryArg, then the request struct needs a pointer to the current queryArg
       if (request->queryArg == NULL) {
         request->queryArg = currentArg;
       } else {
@@ -108,10 +108,12 @@ Request* parseRequest(tcpsock socket) {
   Request * request = getRequest(socket);
   QueryArg * current = request->queryArg;
 
-  while (current != NULL) {
-    printf("%s\n", current->key);
+  if (request->error) {
+    return request;
+  }
 
-    current = current->next;
+  if (request->HTTPMethod == HTTP_POST || request->HTTPMethod == HTTP_PUT) {
+    parseRequestBody(socket, request);
   }
 
   // parse other headers
@@ -119,19 +121,21 @@ Request* parseRequest(tcpsock socket) {
 }
 
 void socketHandler(tcpsock socket, Server *server) {
-  // read entirety of socket into buffer
-  // send to API parser
-  // apiParser will handle JSON
   Request *request = parseRequest(socket);
-  free(request);
 
-  /*if (request->error) {*/
-    /*[>writeErrorResponse(request);<]*/
-  /*} else {*/
-    /*free(request);*/
-  /*}*/
+  if (request->error) {
+    printf("%d\n", request->error);
+    server->errorHandler(socket, request);
+    return;
+  }
 
-  /*Response *response = */
+  server->routeHandler(request);
+  if (request->error) {
+    server->errorHandler(socket, request);
+    return;
+  }
+
+  request->handler(
 
   char response[256];
   int responseCharacters = snprintf(response, sizeof(response), "Hello World");
@@ -157,8 +161,7 @@ void startServer(Server *server) {
       continue;
     }
     
-    socketHandler(acceptedSocket, server);
-    /*go(socketHandler(acceptedSocket, server));*/
+    go(socketHandler(acceptedSocket, server));
   }
 }
 
