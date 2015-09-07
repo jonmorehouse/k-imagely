@@ -120,28 +120,32 @@ Request* parseRequest(tcpsock socket) {
   return request;
 }
 
-void socketHandler(tcpsock socket, Server *server) {
-  Request *request = parseRequest(socket);
-
-  if (request->error) {
-    printf("%d\n", request->error);
-    server->errorHandler(socket, request);
-    return;
-  }
-
-  server->routeHandler(request);
-  if (request->error) {
-    server->errorHandler(socket, request);
-    return;
-  }
-
-  request->handler(
-
+void writeResponse(tcpsock socket, Response* r) {
   char response[256];
   int responseCharacters = snprintf(response, sizeof(response), "Hello World");
   tcpsend(socket, response, responseCharacters, -1);
   tcpflush(socket, -1);
   tcpclose(socket);
+}
+
+void socketHandler(tcpsock socket, Server *server) {
+  Request *request = parseRequest(socket);
+  Response *response = NULL;
+
+  // ensure that there were no problems parsing the raw request
+  if (request->error) {
+    printf("%d\n", request->error);
+    response = server->errorHandler(request);
+    writeResponse(socket, response);
+    return;
+  }
+
+  response = server->routeHandler(request);
+  if (request->error) {
+    response = server->errorHandler(request);
+  }
+
+  writeResponse(socket, response);
 }
 
 void startServer(Server *server) {
@@ -164,6 +168,4 @@ void startServer(Server *server) {
     go(socketHandler(acceptedSocket, server));
   }
 }
-
-
 

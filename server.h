@@ -42,7 +42,7 @@ typedef struct {
   QueryArg * queryArg;
   int error;
 
-  Response* (*handler)(Request *);
+  //Response* (*handler)(Request *);
 } Request;
 
 typedef struct {

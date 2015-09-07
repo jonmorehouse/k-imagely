@@ -4,19 +4,21 @@
 #include <string.h>
 #include <libmill.h>
 
-#include "app.h"
+#include "handlers.h"
+#include "server.h"
 
-void errorHandler(tcpsock socket, Request * request) {
+Response* errorHandler(Request * request) {
   // TODO: implement error handler
-
   printf("%s\n", "error handler goes here");
+
+  return NULL;
 }
 
-void routeHandler(Request * request) {
+Response* routeHandler(Request * request) {
   // TODO: implement router
   // TODO: implement middleware here if its needed - IE: json parser?
-
   printf("%s\n", "router");
+  return NULL;
 }
 
 
